@@ -1,4 +1,5 @@
 #include "tcp_server.h"
+#include "controller.h"
 
 static int server_fd = -1;
 static int client_fd = -1;
@@ -14,7 +15,7 @@ void die(const char *msg) {
     exit(EXIT_FAILURE);
 }
 
-void setup_tcp_server(void) {
+void init_tcp_server(void) {
     struct sockaddr_in serv_addr;
     int yes = 1;
 
@@ -51,6 +52,40 @@ void setup_tcp_server(void) {
     printf("TCP sunucu: port %d dinleniyor...\n", PORT);
 }
 
+
+void tcp_reader(){
+    char data[RECV_DATA_LEN] = {0};
+    if(fork()>0){
+        printf("RECV listen start\n");
+        while(1){
+            if(client_fd == -1){
+                    sleep(1);
+                    continue;
+                }
+                if(recv(client_fd, data, sizeof(char)*RECV_DATA_LEN, 0)>0){
+                    printf("[RECV DATA]: %s\n", data);
+                    const char* format = "%1d%4d%s";
+                    char value[CONTROLLER_VALUE_LEN];
+                    int controller, size; 
+                    int ps =sscanf(data, format, &controller, &size, value);
+                    printf("ps:%d\n",ps);
+                    if(ps != 3){
+                        printf("[RECV ERROR]: parsing failed. '%s'", data);
+                        continue;
+                    }
+                    printf("controller: '%d',size: '%d',value: '%s'",controller,size,value);
+                    ControllerCommand c = {0};
+                    c.controller= controller;
+                    c.size= size;
+                    strcpy(c.value, value);
+                    exec_command(c);
+            }
+        }
+    }
+    printf("tcp reader done\n");
+
+}
+
 void set_client(int new_client_fd) {
     pthread_mutex_lock(&client_mutex);
     if (client_fd != -1) {
@@ -58,6 +93,7 @@ void set_client(int new_client_fd) {
         close(client_fd);
     }
     client_fd = new_client_fd;
+    tcp_reader();
     pthread_mutex_unlock(&client_mutex);
 }
 

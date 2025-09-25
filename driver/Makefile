@@ -9,6 +9,7 @@ compile:
 	cc -Wall -Wextra -pthread -c src/main.c -o build/main.o
 	cc -Wall -Wextra -pthread -c src/common.c -o build/common.o
 	cc -Wall -Wextra -pthread -c src/tcp_server.c -o build/tcp_server.o
+	cc -Wall -Wextra -pthread -c src/controller.c -o build/controller.o
 	cc -Wall -Wextra -pthread -c src/touchpad_listener.c -o build/touchpad_listener.o
 
 link:

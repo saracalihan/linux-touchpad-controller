@@ -5,7 +5,7 @@
 #include <fcntl.h>
 #include <linux/input.h>
 
-void setup_touchpad(const char* dev);
+void init_touchpad(const char* dev);
 void* touchpad_event_thread(void* arg);
 void cleanup_touchpad(void);
 

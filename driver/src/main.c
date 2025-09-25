@@ -1,6 +1,7 @@
 #include "common.h"
 #include "tcp_server.h"
 #include "touchpad_listener.h"
+#include "controller.h"
 #include <signal.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
@@ -8,9 +9,15 @@
 
 void cleanup(void) {
     running = false;
+    printf("cleanup\n");
     cleanup_tcp_server();
+    printf("cleanup_tcp_server\n");
+    cleanup_controllers();
+    printf("cleanup_controllers\n");
     cleanup_touchpad();
+    printf("cleanup_touchpad\n");
     cleanup_event_buffer();
+    printf("cleanup_event_buffer\n");
 }
 
 void signal_handler(int signo) {
@@ -29,8 +36,9 @@ int main(void) {
     signal(SIGTERM, signal_handler);
 
     init_event_buffer();
-    setup_tcp_server();
-    setup_touchpad(dev);
+    init_tcp_server();
+    init_controllers();
+    init_touchpad(dev);
 
 
     if (pthread_create(&touchpad_thread, NULL, touchpad_event_thread, NULL) != 0) {

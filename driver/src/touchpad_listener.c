@@ -3,7 +3,7 @@
 
 static int touchpad_fd = -1;
 
-void setup_touchpad(const char* dev) {
+void init_touchpad(const char* dev) {
     touchpad_fd = open(dev, O_RDONLY);
     if (touchpad_fd < 0) {
         perror("touchpad open");

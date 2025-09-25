@@ -7,12 +7,14 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <signal.h>
+#include <stdint.h>
 #include <sys/wait.h>
 
-#define PORT 8080
+#define PORT 8081
 #define BACKLOG 10
 
-void setup_tcp_server(void);
+
+void init_tcp_server(void);
 void set_client(int new_client_fd);
 void disconnect_client(void);
 void send_frame_to_client(TouchpadFrame *frame);

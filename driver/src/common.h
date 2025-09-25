@@ -15,6 +15,32 @@
 #define EVENT_BUFFER_SIZE 1000
 #define DEBUG_FMT "slots[%d]->id: %05d, x: %04d, y: %04d, time: %lld\n"
 #define DATA_FMT "%d%05d%04d%04d%lld"
+#define RECV_DATA_LEN 10
+#define CONTROLLER_VALUE_LEN 32
+/*
+  String ControllerCommand Frame:
+
+  | Controller | size |  value |
+  |   1        |  4   |  [size]|
+
+                       Mouse Value -> | event(1) | key(1) |
+                    Keyboard Value -> | event(1) | key(2) |
+
+*/
+
+typedef struct {
+    int controller; // 1 mouse, 2 keyboard
+    int size; // size of value
+    char value[CONTROLLER_VALUE_LEN];
+} ControllerCommand;
+
+/*
+  String Data Frame:
+
+  | index | id |  x | y | time |
+  |   1   |  5 |  4 | 4 |   13 |
+
+*/
 
 typedef struct {
     int id;
