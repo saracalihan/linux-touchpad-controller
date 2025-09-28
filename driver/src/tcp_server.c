@@ -141,9 +141,9 @@ void send_frame_to_client(TouchpadFrame *frame) {
 
     // Prepare slots
     for (int i = 0; i < TP_SLOTS_COUNT; i++) {
-        if (frame->slots[i].id >= 0 || 1 == 1) {
+        if (SEND_ALL_SLOTS || frame->slots[i].id >= 0) {
             sprintf(messages[message_count], DATA_FMT,
-                    i, frame->slots[i].id, frame->slots[i].x, 
+                    i, frame->slots[i].id, frame->slots[i].x,
                     frame->slots[i].y, frame->slots[i].time);
             message_count++;
         }

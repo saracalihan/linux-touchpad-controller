@@ -12,6 +12,7 @@
 
 #define PORT 8081
 #define BACKLOG 10
+#define SEND_ALL_SLOTS (1==1)
 
 
 void init_tcp_server(void);

@@ -1,5 +1,5 @@
 /*
-  Run `sudo evtest` command for device's `type`, `code` datas 
+  [DEBUG] Run `sudo evtest` command for device's `type`, `code` datas 
 */
 
 #include "controller.h"
@@ -117,7 +117,7 @@ int exec_command(ControllerCommand c){
                     mouse_click(button == MOUSE_LEFT ? BTN_LEFT : BTN_RIGHT);
                     break;
                 default:
-                    printf("[CONTROLLER ERROR]: exec_command ControllerEvent value:'%'. CT_PRESS:%d, CT_RELEASE:%d, CT_CLICK:%d'\n", atoi(&c.value[0]),CT_PRESS,CT_RELEASE, CT_CLICK);
+                    printf("[CONTROLLER ERROR]: exec_command ControllerEvent value:'%d'. CT_PRESS:%d, CT_RELEASE:%d, CT_CLICK:%d'\n", event,CT_PRESS,CT_RELEASE, CT_CLICK);
                     return 0;
             }
             break;
