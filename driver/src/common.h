@@ -17,6 +17,7 @@
 #define DATA_FMT "%d%05d%04d%04d%lld"
 #define RECV_DATA_LEN 10
 #define CONTROLLER_VALUE_LEN 32
+#define SLOT_HISTORY_SIZE 100
 /*
   String ControllerCommand Frame:
 
@@ -58,6 +59,7 @@ typedef struct {
 typedef struct {
     TouchpadFrame frames[EVENT_BUFFER_SIZE];
     int head;
+    int count;
     pthread_mutex_t mutex;
     pthread_cond_t cond;
 } EventBuffer;
@@ -70,6 +72,9 @@ extern volatile bool running;
 void init_event_buffer(void);
 void add_frame_to_buffer(TouchpadFrame *frame);
 bool get_frame_from_buffer(TouchpadFrame *frame);
+Slot get_slot_from_frame(TouchpadFrame *frame);
+int get_frame_count();
+Slot* get_last_move(int slot_index);
 void cleanup_event_buffer(void);
 
 #endif // COMMON_H

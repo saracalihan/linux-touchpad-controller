@@ -1,15 +1,18 @@
-#include "common.h"
-#include "tcp_server.h"
-#include "touchpad_listener.h"
-#include "controller.h"
 #include <signal.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
 
+#include "common.h"
+#include "tcp_server.h"
+#include "touchpad_listener.h"
+#include "controller.h"
+#include "macro_engine.h"
+
 void cleanup(void) {
     running = false;
     printf("cleanup starting...\n");
+    cleanup_macro_engine();
     cleanup_tcp_server();
     cleanup_controllers();
     cleanup_touchpad();
@@ -36,6 +39,7 @@ int main(void) {
     init_event_buffer();
     init_tcp_server();
     init_controllers();
+    init_macro_engine();
     init_touchpad(dev);
 
 

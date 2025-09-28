@@ -135,3 +135,19 @@ int exec_command(ControllerCommand c){
     }
     return 1;
 }
+int exec_str_command(char* data){
+    const char* format = "%1d%4d%s";
+    char value[CONTROLLER_VALUE_LEN];
+    int controller, size; 
+    int ps = sscanf(data, format, &controller, &size, value);
+    if(ps != 3){
+        printf("[RECV ERROR]: parsing failed. '%s'\n", data);
+        return -1;
+    }
+    printf("controller: '%d',size: '%d',value: '%s'\n",controller,size,value);
+    ControllerCommand c = {0};
+    c.controller = controller;
+    c.size = size;
+    strcpy(c.value, value);
+    return exec_command(c);
+}

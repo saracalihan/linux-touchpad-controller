@@ -38,5 +38,6 @@ void mouse_release(int code);
 void mouse_click(int code);
 
 int exec_command(ControllerCommand c);
+int exec_str_command(char* c);
 
 #endif // CONTROLLER_H

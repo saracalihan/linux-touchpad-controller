@@ -56,6 +56,7 @@ void* touchpad_event_thread(void* arg) {
             }
             current_frame.slots[current_slot].time = (long long)ev.time.tv_sec * 1000 + ev.time.tv_usec / 1000;
         } else if (ev.type == EV_SYN && ev.code == SYN_REPORT) {
+            current_frame.slot_index = current_slot;
             current_frame.timestamp = (long long)ev.time.tv_sec * 1000 + ev.time.tv_usec / 1000;
 
             printf("Frame:\n");

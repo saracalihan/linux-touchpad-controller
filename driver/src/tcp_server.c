@@ -67,21 +67,7 @@ void* tcp_reader_thread(void* arg) {
         ssize_t bytes_received = recv(fd, data, sizeof(char)*RECV_DATA_LEN, 0);
         if(bytes_received > 0){
             printf("[RECV DATA]: %s\n", data);
-            const char* format = "%1d%4d%s";
-            char value[CONTROLLER_VALUE_LEN];
-            int controller, size; 
-            int ps = sscanf(data, format, &controller, &size, value);
-            printf("ps:%d\n",ps);
-            if(ps != 3){
-                printf("[RECV ERROR]: parsing failed. '%s'\n", data);
-                continue;
-            }
-            printf("controller: '%d',size: '%d',value: '%s'\n",controller,size,value);
-            ControllerCommand c = {0};
-            c.controller = controller;
-            c.size = size;
-            strcpy(c.value, value);
-            exec_command(c);
+            exec_str_command(data);
             memset(data, 0, RECV_DATA_LEN); // Buffer'ı temizle
         } else if(bytes_received == 0) {
             printf("Client disconnected (recv returned 0)\n");
@@ -178,6 +164,7 @@ void send_frame_to_client(TouchpadFrame *frame) {
 }
 
 void cleanup_tcp_server(void) {
+    printf("cleanup_tcp_server starting...\n");
     pthread_cancel(reader_thread);
     pthread_join(reader_thread, NULL);
     if (client_fd != -1) {
@@ -189,6 +176,7 @@ void cleanup_tcp_server(void) {
         server_fd = -1;
     }
     pthread_mutex_destroy(&client_mutex);
+    printf("cleanup_tcp_server done\n");
 }
 
 int get_server_fd(void) {

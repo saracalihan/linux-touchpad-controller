@@ -1,5 +1,5 @@
 CC = gcc
-CFLAGS = -Wall -Wextra -pthread -ggdb
+CFLAGS = -Wall -Wextra -pthread -ggdb -lm
 TARGET = touchpad_driver
 SOURCES = main.c common.c tcp_server.c touchpad_listener.c
 
@@ -10,6 +10,7 @@ compile:
 	cc ${CFLAGS} -c src/common.c -o build/common.o
 	cc ${CFLAGS} -c src/tcp_server.c -o build/tcp_server.o
 	cc ${CFLAGS} -c src/controller.c -o build/controller.o
+	cc ${CFLAGS} -c src/macro_engine.c -o build/macro_engine.o
 	cc ${CFLAGS} -c src/touchpad_listener.c -o build/touchpad_listener.o
 
 link:
