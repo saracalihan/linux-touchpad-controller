@@ -1,49 +1,38 @@
 #include "common.h"
 
-EventBuffer event_buffer = {0};
+EventBuffer buffer;
 volatile bool running = true;
 
 void init_event_buffer(void) {
-    pthread_mutex_init(&event_buffer.mutex, NULL);
-    pthread_cond_init(&event_buffer.cond, NULL);
-    event_buffer.write_index = 0;
-    event_buffer.read_index = 0;
-    event_buffer.count = 0;
+    pthread_mutex_init(&buffer.mutex, NULL);
+    pthread_cond_init(&buffer.cond, NULL);
+    buffer.head = 0;
 }
 
 void add_frame_to_buffer(TouchpadFrame *frame) {
-    pthread_mutex_lock(&event_buffer.mutex);
+    pthread_mutex_lock(&buffer.mutex);
 
-    event_buffer.frames[event_buffer.write_index] = *frame;
-    event_buffer.write_index = (event_buffer.write_index + 1) % EVENT_BUFFER_SIZE;
+    buffer.frames[buffer.head] = *frame;
+    buffer.head = (buffer.head + 1) % EVENT_BUFFER_SIZE;
 
-    if (event_buffer.count < EVENT_BUFFER_SIZE) {
-        event_buffer.count++;
-    } else {
-        event_buffer.read_index = (event_buffer.read_index + 1) % EVENT_BUFFER_SIZE;
-    }
-
-    pthread_cond_broadcast(&event_buffer.cond);
-    pthread_mutex_unlock(&event_buffer.mutex);
+    pthread_cond_broadcast(&buffer.cond);
+    pthread_mutex_unlock(&buffer.mutex);
 }
 
 bool get_frame_from_buffer(TouchpadFrame *frame) {
-    pthread_mutex_lock(&event_buffer.mutex);
+    pthread_mutex_lock(&buffer.mutex);
+    pthread_cond_wait(&buffer.cond, &buffer.mutex);
 
-    if (event_buffer.count == 0) {
-        pthread_mutex_unlock(&event_buffer.mutex);
-        return false;
-    }
+    int read_index = (buffer.head - 1 + EVENT_BUFFER_SIZE) % EVENT_BUFFER_SIZE;
+    *frame = buffer.frames[read_index];
 
-    *frame = event_buffer.frames[event_buffer.read_index];
-    event_buffer.read_index = (event_buffer.read_index + 1) % EVENT_BUFFER_SIZE;
-    event_buffer.count--;
-
-    pthread_mutex_unlock(&event_buffer.mutex);
+    pthread_mutex_unlock(&buffer.mutex);
     return true;
 }
 
 void cleanup_event_buffer(void) {
-    pthread_mutex_destroy(&event_buffer.mutex);
-    pthread_cond_destroy(&event_buffer.cond);
+    printf("cleanup_event_buffer starting\n");
+    pthread_mutex_destroy(&buffer.mutex);
+    pthread_cond_destroy(&buffer.cond);
+    printf("cleanup_event_buffer done\n");
 }

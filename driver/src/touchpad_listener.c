@@ -57,7 +57,6 @@ void* touchpad_event_thread(void* arg) {
             current_frame.slots[current_slot].time = (long long)ev.time.tv_sec * 1000 + ev.time.tv_usec / 1000;
         } else if (ev.type == EV_SYN && ev.code == SYN_REPORT) {
             current_frame.timestamp = (long long)ev.time.tv_sec * 1000 + ev.time.tv_usec / 1000;
-            current_frame.is_sync_report = true;
 
             printf("Frame:\n");
             for (int i = 0; i < TP_SLOTS_COUNT; i++) {
@@ -69,7 +68,6 @@ void* touchpad_event_thread(void* arg) {
             }
 
             add_frame_to_buffer(&current_frame);
-            send_frame_to_client(&current_frame);
         }
     }
 
@@ -78,8 +76,13 @@ void* touchpad_event_thread(void* arg) {
 }
 
 void cleanup_touchpad(void) {
+    printf("cleanup_touchpad starting...\n");
     if (touchpad_fd > 0) {
-        close(touchpad_fd);
+        if(close(touchpad_fd)<0){
+            perror("cleanup_touchpad");
+            exit(EXIT_FAILURE);
+        }
         touchpad_fd = -1;
     }
+    printf("cleanup_touchpad done\n");
 }

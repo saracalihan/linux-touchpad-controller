@@ -38,11 +38,16 @@ void init_controllers(){
 
 void cleanup_mouse(){
     ioctl(mouse_fd, UI_DEV_DESTROY);
-    close(mouse_fd);
+    if(close(mouse_fd)<0){
+        perror("cleanup_mouse");
+        exit(EXIT_FAILURE);
+    }
 }
 
 void cleanup_controllers(){
+    printf("cleanup_controllers starting...\n");
     cleanup_mouse();
+    printf("cleanup_controllers done\n");
 }
 
 /*

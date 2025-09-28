@@ -51,21 +51,19 @@ typedef struct {
 
 typedef struct {
     Slot slots[TP_SLOTS_COUNT];
+    int slot_index;
     long long timestamp;
-    bool is_sync_report;
 } TouchpadFrame;
 
 typedef struct {
     TouchpadFrame frames[EVENT_BUFFER_SIZE];
-    int write_index;
-    int read_index;
-    int count;
+    int head;
     pthread_mutex_t mutex;
     pthread_cond_t cond;
 } EventBuffer;
 
 // Global variables
-extern EventBuffer event_buffer;
+extern volatile EventBuffer event_buffer;
 extern volatile bool running;
 
 // Event buffer functions

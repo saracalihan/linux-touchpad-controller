@@ -1,10 +1,12 @@
 #include "tcp_server.h"
 #include "controller.h"
+#include "common.h"
 
 static int server_fd = -1;
 static int client_fd = -1;
 static pthread_mutex_t client_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_t reader_thread;
+static pthread_t sender_thread;
 
 void sigchld_handler(int signo) {
     (void)signo;
@@ -53,10 +55,10 @@ void init_tcp_server(void) {
     printf("TCP sunucu: port %d dinleniyor...\n", PORT);
 }
 
-
-void tcp_reader(int fd){
+void* tcp_reader_thread(void* arg) {
+    int fd = *(int*)arg;
+    printf("tcp reader starting for fd: %d\n", fd);
     char data[RECV_DATA_LEN] = {0};
-    printf("RECV listen start. fd: %d\n", fd);
     while(1){
         if(fd == -1){
             sleep(1);
@@ -90,11 +92,18 @@ void tcp_reader(int fd){
         }
     }
     printf("tcp reader finished for fd: %d\n", fd);
+    return NULL;
 }
 
-void* tcp_reader_thread(void* arg) {
+void* tcp_sender_thread(void* arg) {
     int fd = *(int*)arg;
-    tcp_reader(fd);
+    printf("tcp sender starting for fd: %d\n", fd);
+    TouchpadFrame current_frame;
+    while(1){
+        get_frame_from_buffer(&current_frame);
+        send_frame_to_client(&current_frame);
+    }
+    printf("tcp sender finished for fd: %d\n", fd);
     return NULL;
 }
 
@@ -106,12 +115,20 @@ void set_client(int new_client_fd) {
 
         pthread_cancel(reader_thread);
         pthread_join(reader_thread, NULL);
+
+        pthread_cancel(sender_thread);
+        pthread_join(sender_thread, NULL);
     }
     client_fd = new_client_fd;
     printf("Setting new client_fd: %d\n", client_fd);
 
     if (pthread_create(&reader_thread, NULL, tcp_reader_thread, &client_fd) != 0) {
-        perror("pthread_create failed");
+        perror("pthread_create tcp_reader_thread failed");
+        close(client_fd);
+        client_fd = -1;
+    }
+    if (pthread_create(&sender_thread, NULL, tcp_sender_thread, &client_fd) != 0) {
+        perror("pthread_create tcp_sender_thread failed");
         close(client_fd);
         client_fd = -1;
     }
@@ -119,13 +136,11 @@ void set_client(int new_client_fd) {
 }
 
 void disconnect_client(void) {
-    pthread_mutex_lock(&client_mutex);
     if (client_fd != -1) {
         close(client_fd);
         client_fd = -1;
         printf("Client disconnected\n");
     }
-    pthread_mutex_unlock(&client_mutex);
 }
 
 void send_frame_to_client(TouchpadFrame *frame) {
@@ -163,14 +178,11 @@ void send_frame_to_client(TouchpadFrame *frame) {
 }
 
 void cleanup_tcp_server(void) {
-    pthread_mutex_lock(&client_mutex);
+    pthread_cancel(reader_thread);
+    pthread_join(reader_thread, NULL);
     if (client_fd != -1) {
-        pthread_cancel(reader_thread);
-        pthread_join(reader_thread, NULL);
-        close(client_fd);
-        client_fd = -1;
+        disconnect_client();
     }
-    pthread_mutex_unlock(&client_mutex);
 
     if (server_fd > 0) {
         close(server_fd);

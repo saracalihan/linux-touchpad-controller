@@ -9,15 +9,12 @@
 
 void cleanup(void) {
     running = false;
-    printf("cleanup\n");
+    printf("cleanup starting...\n");
     cleanup_tcp_server();
-    printf("cleanup_tcp_server\n");
     cleanup_controllers();
-    printf("cleanup_controllers\n");
     cleanup_touchpad();
-    printf("cleanup_touchpad\n");
     cleanup_event_buffer();
-    printf("cleanup_event_buffer\n");
+    printf("cleanup done\n");
 }
 
 void signal_handler(int signo) {
@@ -61,7 +58,7 @@ int main(void) {
             continue;
         }
 
-        printf("Nre connection: %s:%d\n",
+        printf("New connection: %s:%d\n",
                inet_ntoa(cli_addr.sin_addr),
                ntohs(cli_addr.sin_port));
 
