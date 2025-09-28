@@ -4,6 +4,7 @@
 static int server_fd = -1;
 static int client_fd = -1;
 static pthread_mutex_t client_mutex = PTHREAD_MUTEX_INITIALIZER;
+static pthread_t reader_thread;
 
 void sigchld_handler(int signo) {
     (void)signo;
@@ -53,37 +54,48 @@ void init_tcp_server(void) {
 }
 
 
-void tcp_reader(){
+void tcp_reader(int fd){
     char data[RECV_DATA_LEN] = {0};
-    if(fork()>0){
-        printf("RECV listen start\n");
-        while(1){
-            if(client_fd == -1){
-                    sleep(1);
-                    continue;
-                }
-                if(recv(client_fd, data, sizeof(char)*RECV_DATA_LEN, 0)>0){
-                    printf("[RECV DATA]: %s\n", data);
-                    const char* format = "%1d%4d%s";
-                    char value[CONTROLLER_VALUE_LEN];
-                    int controller, size; 
-                    int ps =sscanf(data, format, &controller, &size, value);
-                    printf("ps:%d\n",ps);
-                    if(ps != 3){
-                        printf("[RECV ERROR]: parsing failed. '%s'", data);
-                        continue;
-                    }
-                    printf("controller: '%d',size: '%d',value: '%s'",controller,size,value);
-                    ControllerCommand c = {0};
-                    c.controller= controller;
-                    c.size= size;
-                    strcpy(c.value, value);
-                    exec_command(c);
+    printf("RECV listen start. fd: %d\n", fd);
+    while(1){
+        if(fd == -1){
+            sleep(1);
+            continue;
+        }
+        ssize_t bytes_received = recv(fd, data, sizeof(char)*RECV_DATA_LEN, 0);
+        if(bytes_received > 0){
+            printf("[RECV DATA]: %s\n", data);
+            const char* format = "%1d%4d%s";
+            char value[CONTROLLER_VALUE_LEN];
+            int controller, size; 
+            int ps = sscanf(data, format, &controller, &size, value);
+            printf("ps:%d\n",ps);
+            if(ps != 3){
+                printf("[RECV ERROR]: parsing failed. '%s'\n", data);
+                continue;
             }
+            printf("controller: '%d',size: '%d',value: '%s'\n",controller,size,value);
+            ControllerCommand c = {0};
+            c.controller = controller;
+            c.size = size;
+            strcpy(c.value, value);
+            exec_command(c);
+            memset(data, 0, RECV_DATA_LEN); // Buffer'ı temizle
+        } else if(bytes_received == 0) {
+            printf("Client disconnected (recv returned 0)\n");
+            break;
+        } else if(bytes_received < 0) {
+            perror("recv error");
+            break;
         }
     }
-    printf("tcp reader done\n");
+    printf("tcp reader finished for fd: %d\n", fd);
+}
 
+void* tcp_reader_thread(void* arg) {
+    int fd = *(int*)arg;
+    tcp_reader(fd);
+    return NULL;
 }
 
 void set_client(int new_client_fd) {
@@ -91,9 +103,18 @@ void set_client(int new_client_fd) {
     if (client_fd != -1) {
         printf("Replacing existing client connection\n");
         close(client_fd);
+
+        pthread_cancel(reader_thread);
+        pthread_join(reader_thread, NULL);
     }
     client_fd = new_client_fd;
-    tcp_reader();
+    printf("Setting new client_fd: %d\n", client_fd);
+
+    if (pthread_create(&reader_thread, NULL, tcp_reader_thread, &client_fd) != 0) {
+        perror("pthread_create failed");
+        close(client_fd);
+        client_fd = -1;
+    }
     pthread_mutex_unlock(&client_mutex);
 }
 
@@ -109,8 +130,8 @@ void disconnect_client(void) {
 
 void send_frame_to_client(TouchpadFrame *frame) {
     pthread_mutex_lock(&client_mutex);
-
     if (client_fd == -1) {
+        printf("[TCP SEND ERROR]: client fd is -1\n");
         pthread_mutex_unlock(&client_mutex);
         return;
     }
@@ -134,6 +155,7 @@ void send_frame_to_client(TouchpadFrame *frame) {
             printf("Client send error, disconnecting\n");
             close(client_fd);
             client_fd = -1;
+            pthread_mutex_unlock(&client_mutex);
             break;
         }
     }
@@ -143,6 +165,8 @@ void send_frame_to_client(TouchpadFrame *frame) {
 void cleanup_tcp_server(void) {
     pthread_mutex_lock(&client_mutex);
     if (client_fd != -1) {
+        pthread_cancel(reader_thread);
+        pthread_join(reader_thread, NULL);
         close(client_fd);
         client_fd = -1;
     }

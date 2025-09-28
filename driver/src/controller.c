@@ -13,8 +13,9 @@ int init_mouse(){
         return 1;
     }
 
-    // Sol click eventini destekle
+    // Sol ve sağ click eventlerini destekle
     ioctl(fd_uinput, UI_SET_EVBIT, EV_KEY);
+    ioctl(fd_uinput, UI_SET_KEYBIT, BTN_LEFT);
     ioctl(fd_uinput, UI_SET_KEYBIT, BTN_RIGHT);
     ioctl(fd_uinput, UI_SET_EVBIT, EV_SYN);
 

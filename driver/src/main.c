@@ -23,6 +23,7 @@ void cleanup(void) {
 void signal_handler(int signo) {
     printf("\nReceived signal %d, shutting down...\n", signo);
     cleanup();
+    printf("cleanup done\n");
     exit(0);
 }
 
