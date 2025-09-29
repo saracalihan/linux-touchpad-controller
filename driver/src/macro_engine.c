@@ -40,75 +40,155 @@ bool on_left(Slot* slot){
     return slot->x < WIDTH/2;
 }
 
-bool evaluate_query(QueryNode* node, QueryCtx* ctx) {
-    if (!node) return false;
+int _add(int x, int y){
+    return x + y;
+}
+
+int _sub(int x, int y){
+    return x - y;
+}
+
+int _div(int x, int y){
+    if(y == 0){
+        ERROR("devide by zero!");
+        return 0;
+    }
+    return x / y;
+}
+
+int _mul(int x, int y){
+    return x * y;
+}
+
+int evaluate_query(QueryNode* node, QueryCtx* ctx) {
+    if (!node) return 0;
 
     switch (node->operator) {
         case OP_AND: {
-            if (node->child_count < 2) {
-                ERROR("'and' need least 2 eperand! %d\n", node->child_count);
-                return false;
+            if (node->value_count < 2) {
+                ERROR("'and' need least 2 eperand! %d\n", node->value_count);
+                return 0;
             }
 
-            for (int i = 0; i < node->child_count; i++) {
-                if (!evaluate_query(node->children[i], ctx)) {
-                    return false;
+            for (int i = 0; i < node->value_count; i++) {
+                if(node->values[i].type != QV_NODE){
+                    ERROR("'and' only can 'and' QV_NODE!\n");
+                    return 0;
+                }
+                if (!evaluate_query(node->values[i].v_node, ctx)) {
+                    return 0;
                 }
             }
-            return true;
+            return 1;
         }
-
         case OP_OR: {
-            if (node->child_count < 2) {
-                ERROR("'and' need least 2 eperand! %d\n", node->child_count);
-                return false;
+            if (node->value_count < 2) {
+                ERROR("'or' need least 2 eperand! %d\n", node->value_count);
+                return 0;
             }
 
-            for (int i = 0; i < node->child_count; i++) {
-                if (evaluate_query(node->children[i], ctx)) {
-                    return true;
+            for (int i = 0; i < node->value_count; i++) {
+                if(node->values[i].type != QV_NODE){
+                    ERROR("'or' only can 'or' QV_NODE!\n");
+                    return 0;
+                }
+                if (evaluate_query(node->values[i].v_node, ctx)) {
+                    return 1;
                 }
             }
-            return false;
+            return 0;
         }
-
         case OP_GTE: {
             if (node->value_count == 2) {
-                return node->values[0] >= node->values[1];
+                if(node->values[0].type != QV_INT || node->values[1].type != QV_INT){
+                    ERROR("'gte' need 2 int typed value\n");
+                    return 0;
+                }
+                return node->values[0].v_int >= node->values[1].v_int;
             } else {
                 ERROR("'gte' need least 2 eperand!\n");
             }
-            return false;
+            return 0;
         }
-
         case OP_LTE: {
             if (node->value_count == 2) {
-                return node->values[0] <= node->values[1];
+                if(node->values[0].type != QV_INT || node->values[1].type != QV_INT){
+                    ERROR("'lte' need 2 int typed value\n");
+                    return 0;
+                }
+                return node->values[0].v_int <= node->values[1].v_int;
             } else {
                 ERROR("'lte' need least 2 eperand!\n");
             }
-            return false;
+            return 0;
+        }
+        case OP_ADD: {
+            if (node->value_count >= 2) {
+                int total =0;
+                for(int i = 0; i < node->value_count; i++){
+                    if(node->values[i].type == QV_INT){
+                        total += node->values[i].v_int;
+                    } else if(node->values[i].type == QV_NODE){
+                        total += evaluate_query(node->values[i].v_node, ctx);
+                    } else {
+                        ERROR("add: '%d' type not implemented yet", node->values[i].type);
+                        return 0;
+                    }
+                }
+                return total;
+            } else {
+                ERROR("'add' need least 2 eperand!\n");
+                return 0;
+            }
+        }
+        case OP_DIV: {
+            if (node->value_count >= 2) {
+                int total = node->values[0].type == QV_NODE ? evaluate_query(node->values[0].v_node, ctx) : node->values[0].v_int ;
+                printf("total: %d\n", total);
+                for(int i = 1; i < node->value_count; i++){
+                    if(node->values[i].type == QV_INT){
+                        total /= node->values[i].v_int;
+                    } else if(node->values[i].type == QV_NODE){
+                        total /= evaluate_query(node->values[i].v_node, ctx);
+                    } else {
+                        ERROR("div: '%d' type not implemented yet", node->values[i].type);
+                        return 0;
+                    }
+                }
+                return total;
+            } else {
+                ERROR("'div' need least 2 eperand!\n");
+                return 0;
+            }
         }
 
         case OP_DOUBLE_TAP: {
-            return ctx->old_slot ? double_tap(&ctx->slot, ctx->old_slot) : false;
+            return ctx->old_slot ? double_tap(&ctx->slot, ctx->old_slot) : 0;
         }
 
         case OP_ON_BOTTOM: {
-            return on_bottom(&ctx->slot);
+            return on_bottom(&ctx->slot) ? 1 : 0;
         }
 
         case OP_ON_RIGHT: {
-            return on_right(&ctx->slot);
+            return on_right(&ctx->slot) ? 1 : 0;
         }
 
         case OP_ON_LEFT: {
-            return on_left(&ctx->slot);
+            return on_left(&ctx->slot) ? 1 : 0;
+        }
+
+        case OP_GET_WIDTH: {
+            return WIDTH;
+        }
+
+        case OP_GET_HEIGHT: {
+            return HEIGHT;
         }
 
         default:
             ERROR("Invalid operator '%d'!\n", node->operator);
-            return false;
+            return 0;
     }
 }
 
@@ -118,30 +198,39 @@ QueryNode* create_query_node(QueryOperator op) {
 
     node->operator = op;
     node->value_count = 0;
-    node->child_count = 0;
     memset(node->values, 0, sizeof(node->values));
-    memset(node->children, 0, sizeof(node->children));
 
     return node;
 }
 
 void add_query_value(QueryNode* node, int value) {
     if (node && node->value_count < MAX_QUERY_VALUES) {
-        node->values[node->value_count++] = value;
+        QueryValue v = {
+            .type = QV_INT,
+            .v_int = value,
+        };
+        node->values[node->value_count++] = v;
     }
 }
 
 void add_query_child(QueryNode* parent, QueryNode* child) {
-    if (parent && child && parent->child_count < MAX_QUERY_CHILDREN) {
-        parent->children[parent->child_count++] = child;
+    if (parent && child && parent->value_count < MAX_QUERY_CHILDREN) {
+        QueryValue v = {
+            .type = QV_NODE,
+            .v_node = child,
+        };
+        parent->values[parent->value_count++] = v;
     }
 }
 
 void free_query_node(QueryNode* node) {
     if (!node) return;
 
-    for (int i = 0; i < node->child_count; i++) {
-        free_query_node(node->children[i]);
+    for (int i = 0; i < node->value_count; i++) {
+        if(node->values[i].type != QV_NODE){
+            continue;
+        }
+        free_query_node(node->values[i].v_node);
     }
     free(node);
 }
@@ -196,13 +285,17 @@ void* macro_engine_thread(void* arg){
             printf("[MACRO] Double tap\n");
             continue;
         }
+
         // // EXAMPLE QUERY
         // // Equivalent to: slot.x >= 100 && slot.y <= 500 && on_left(&slot)
         // QueryNode* complex_query = create_query_node(OP_AND);
 
-        // QueryNode* x_check = create_query_node(OP_GTE);
-        // add_query_value(x_check, slot.x);
-        // add_query_value(x_check, 100);
+        QueryNode* x_check = create_query_node(OP_GTE);
+        add_query_value(x_check, slot.x);
+        QueryNode* div = create_query_node(OP_DIV);
+        add_query_child(div, create_query_node(OP_GET_WIDTH));
+        add_query_value(div, 2);
+        add_query_value(x_check, div);
 
         // QueryNode* y_check = create_query_node(OP_LTE);
         // add_query_value(y_check, slot.y);
@@ -212,11 +305,11 @@ void* macro_engine_thread(void* arg){
         // add_query_child(complex_query, y_check);
         // add_query_child(complex_query, create_query_node(OP_ON_LEFT));
 
-        // if (evaluate_query(complex_query, &ctx)) {
-        //     // Execute some command
-        //     printf("[MACRO] Complex condition met\n");
-        // }
-        // free_query_node(complex_query);
+        if (evaluate_query(x_check, &ctx)) {
+            // Execute some command
+            printf("[MACRO] Complex condition met\n");
+        }
+        free_query_node(x_check);
     }
     free_query_node(right_click_query);
     free_query_node(double_tap_query);

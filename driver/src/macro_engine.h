@@ -12,22 +12,38 @@ typedef enum {
     OP_OR,
     OP_GTE,
     OP_LTE,
+    OP_ADD,
+    OP_SUB,
+    OP_DIV,
+    OP_MULT,
     OP_DOUBLE_TAP,
     OP_ON_BOTTOM,
     OP_ON_RIGHT,
-    OP_ON_LEFT
+    OP_ON_LEFT,
+    OP_GET_WIDTH,
+    OP_GET_HEIGHT
 } QueryOperator;
 
-// Forward declaration
+
+typedef enum {
+    QV_INT,
+    QV_NODE
+} QueryValueType;
+
 struct QueryNode;
 
-// Query Node Structure
+typedef struct {
+    QueryValueType type;
+    union {
+        int v_int;
+        struct QueryNode* v_node;
+    };
+} QueryValue;
+
 typedef struct QueryNode {
     QueryOperator operator;
-    int values[MAX_QUERY_VALUES];
+    QueryValue values[MAX_QUERY_VALUES];
     int value_count;
-    struct QueryNode* children[MAX_QUERY_CHILDREN];
-    int child_count;
 } QueryNode;
 
 typedef struct{
@@ -36,7 +52,7 @@ typedef struct{
     TouchpadFrame frame;
 } QueryCtx;
 
-// Macro Definition Structure
+
 typedef struct {
     QueryNode* condition;
     char* command;
@@ -46,7 +62,7 @@ void init_macro_engine();
 void cleanup_macro_engine();
 void* macro_engine_thread(void* arg);
 
-bool evaluate_query(QueryNode* node, QueryCtx* ctx);
+int evaluate_query(QueryNode* node, QueryCtx* ctx);
 QueryNode* create_query_node(QueryOperator op);
 void add_query_value(QueryNode* node, int value);
 void add_query_child(QueryNode* parent, QueryNode* child);
