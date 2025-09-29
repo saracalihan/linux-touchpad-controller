@@ -11,6 +11,7 @@
 #define DOUBLE_TAP_MS 300
 #define DOUBLE_TAP_AREA 100
 #define LOWER_SECTION_HEIGHT 100
+#define HOLD_TRASHOLD_MS 400
 
 // TODO: change it to dhe native Command type
 #define COMMAND_LEFT_CLICK "1000231"
@@ -38,6 +39,14 @@ bool on_right(Slot* slot){
 
 bool on_left(Slot* slot){
     return slot->x < WIDTH/2;
+}
+
+bool hold(Slot* slot, Slot* old_slot, int time){
+    if(!old_slot || slot->id != -1){
+        return false;
+    }
+    int dt = slot->time - old_slot->time;
+    return time - HOLD_TRASHOLD_MS < dt && dt < time + HOLD_TRASHOLD_MS; 
 }
 
 bool evaluate_query(QueryNode* node, QueryCtx* ctx) {

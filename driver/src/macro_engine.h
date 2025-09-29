@@ -15,7 +15,8 @@ typedef enum {
     OP_DOUBLE_TAP,
     OP_ON_BOTTOM,
     OP_ON_RIGHT,
-    OP_ON_LEFT
+    OP_ON_LEFT,
+    OP_HOLD
 } QueryOperator;
 
 // Forward declaration
