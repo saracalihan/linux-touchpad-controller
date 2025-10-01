@@ -37,6 +37,10 @@ void mouse_press(int code);
 void mouse_release(int code);
 void mouse_click(int code);
 
+void key_press(int code);
+void key_release(int code);
+void key_click(int code);
+
 int exec_command(ControllerCommand c);
 int exec_str_command(char* c);
 
