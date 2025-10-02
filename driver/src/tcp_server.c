@@ -121,6 +121,10 @@ void set_client(int new_client_fd) {
     pthread_mutex_unlock(&client_mutex);
 }
 
+int get_client(){
+    return client_fd;
+}
+
 void disconnect_client(void) {
     if (client_fd != -1) {
         close(client_fd);

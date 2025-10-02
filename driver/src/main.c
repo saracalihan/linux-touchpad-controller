@@ -52,6 +52,10 @@ int main(void) {
     printf("Event listening and TCP server started. Touchpad events will be continuously monitored.\n");
 
     while (running) {
+        if(get_client() != -1){
+            sleep(1);
+            continue;
+        }
         struct sockaddr_in cli_addr;
         socklen_t sin_size = sizeof(cli_addr);
         int new_client_fd = accept(get_server_fd(), (struct sockaddr *)&cli_addr, &sin_size);

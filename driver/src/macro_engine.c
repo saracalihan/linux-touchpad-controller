@@ -10,7 +10,7 @@
 // SYSTEM CONSTANTS
 #define DOUBLE_TAP_MS 300
 #define DOUBLE_TAP_AREA 100
-#define LOWER_SECTION_HEIGHT 100
+#define LOWER_SECTION_HEIGHT 200
 #define HOLD_TRASHOLD_MS 400
 
 // TODO: change it to dhe native Command type
