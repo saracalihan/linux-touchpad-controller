@@ -30,7 +30,7 @@ void signal_handler(int signo) {
 int main(void) {
     // TODO: driver tcp ile mevcut device'ları listelesin ve event sectirsin.
     //         cat /proc/bus/input/devices
-    const char *dev = "/dev/input/event6";
+    const char *dev = "/dev/input/event9";
     pthread_t touchpad_thread;
 
     signal(SIGINT, signal_handler);

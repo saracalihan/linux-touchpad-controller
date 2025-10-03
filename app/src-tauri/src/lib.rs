@@ -1,8 +1,9 @@
 use std::sync::{Arc, Mutex};
 use serde::{Deserialize, Serialize};
-use tauri::{Emitter, State};
-use tokio::io::{AsyncReadExt};
+use tauri::{Emitter, State, Listener};
+use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::TcpStream;
+use tokio::sync::mpsc;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TouchData {
@@ -14,6 +15,7 @@ pub struct TouchData {
 }
 
 type TouchDataState = Arc<Mutex<Vec<String>>>;
+type CommandSender = Arc<Mutex<Option<mpsc::UnboundedSender<String>>>>;
 
 // fn parse_touch_data(data: &str) -> Option<TouchData> {
 //     let data = data.trim();
@@ -92,54 +94,80 @@ type TouchDataState = Arc<Mutex<Vec<String>>>;
 async fn start_tcp_connection(
     app_handle: tauri::AppHandle,
     state: State<'_, TouchDataState>,
+    command_sender: State<'_, CommandSender>,
 ) -> Result<bool, String> {
     let state_clone = state.inner().clone();
+    let command_sender_clone = command_sender.inner().clone();
     let app_handle_clone = app_handle.clone();
 
     tokio::spawn(async move {
         match TcpStream::connect("localhost:8081").await {
-            Ok(mut stream) => {
+            Ok(stream) => {
+                // Create a channel for sending commands
+                let (tx, mut rx) = mpsc::unbounded_channel::<String>();
+
+                // Store the sender for command sending
+                {
+                    let mut sender_guard = command_sender_clone.lock().unwrap();
+                    *sender_guard = Some(tx.clone());
+                }
+                
+                let (mut reader, mut writer) = stream.into_split();
+
+                // Listen for exec-command events
+                let tx_for_listener = tx.clone();
+                app_handle_clone.listen("exec-command", move |event| {
+                    if let Ok(command_str) = serde_json::from_str::<String>(event.payload()) {
+                        let _ = tx_for_listener.send(command_str);
+                    }
+                });
+
                 app_handle_clone.emit("tcp-connected", true);
                 println!("TCP bağlantısı kuruldu: localhost:8081");
-                let mut buffer = [0; 1024];
 
+                // Handle command sending in a separate task
+                tokio::spawn(async move {
+                    while let Some(command) = rx.recv().await {
+                        if let Err(e) = writer.write_all(command.as_bytes()).await {
+                            eprintln!("Komut gönderme hatası: {}", e);
+                            break;
+                        }
+                    }
+                });
+
+                let mut buffer = [0; 1024];
                 loop {
-                    match stream.read(&mut buffer).await {
+                    match reader.read(&mut buffer).await {
                         Ok(0) => {
                             println!("TCP bağlantısı kapandı");
+                            // Clear the stored sender
+                            {
+                                let mut sender_guard = command_sender_clone.lock().unwrap();
+                                *sender_guard = None;
+                            }
                             let _ = app_handle_clone.emit("tcp-error", "Bağlantı kapandı");
                             break;
                         }
                         Ok(n) => {
                             let data = String::from_utf8_lossy(&buffer[..n]);
-                            // println!("TCP: {}", data);
-                            // println!("Gelen veri: '{}'", data);
                             let _ = app_handle_clone.emit("tcp-data", data);
-                            // // Parse the incoming data into TouchData
-                            // if let Some(touch_data) = parse_touch_data(&data) {
-                            //     // Update state
-                            //     if let Ok(mut state) = state_clone.lock() {
-                            //         state.push(touch_data.clone());
-                            //     }
-                            //     // Emit TouchData object instead of raw string
-                            //     let _ = app_handle_clone.emit("tcp-data", touch_data);
-                            // } else {
-                            //     println!("Veri parse edilemedi: {}", data);
-                            // }
                         }
                         Err(e) => {
                             eprintln!("TCP okuma hatası: {}", e);
+                            // Clear the stored sender
+                            {
+                                let mut sender_guard = command_sender_clone.lock().unwrap();
+                                *sender_guard = None;
+                            }
                             let _ = app_handle_clone.emit("tcp-error", format!("Okuma hatası: {}", e));
                             break;
                         }
                     }
                 }
-                return false;
             }
             Err(e) => {
                 eprintln!("TCP bağlantı hatası: {}", e);
                 let _ = app_handle_clone.emit("tcp-error", format!("Bağlantı hatası: {}", e));
-                return false;
             }
         }
     });
@@ -150,10 +178,12 @@ async fn start_tcp_connection(
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     let touch_data_state: TouchDataState = Arc::new(Mutex::new(Vec::new()));
+    let command_sender: CommandSender = Arc::new(Mutex::new(None));
 
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
         .manage(touch_data_state)
+        .manage(command_sender)
         .invoke_handler(tauri::generate_handler![start_tcp_connection])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

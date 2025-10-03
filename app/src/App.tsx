@@ -1,7 +1,9 @@
 import { useState, useEffect, useRef } from "react";
 import { invoke } from "@tauri-apps/api/core";
-import { listen } from "@tauri-apps/api/event";
+import { listen, emit } from "@tauri-apps/api/event";
 import "./App.css";
+import { Button } from "./components/Button";
+import { CONTROLLER_CODES, CONTROLLER_EVENTS, CONTROLLERS } from "./constants";
 
 interface TouchData {
   index: number | null;
@@ -19,6 +21,10 @@ const SLOTS_COUNT = 5;
 function App() {
   const [connectionStatus, setConnectionStatus] = useState(false);
   const [touchSlots, setTouchSlots] = useState<(TouchData | null)[]>([null, null, null, null, null]);
+  const [controllerType, setControllerType] = useState<keyof typeof CONTROLLER_EVENTS>("mouse");
+  const [controllerEvent, setControllerEvent] = useState<string>();
+  const [controllerCode, setControllerCode] = useState<string>();
+
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const lastDrawTime = useRef<number>(0);
   const animationFrameId = useRef<number | null>(null);
@@ -105,6 +111,20 @@ function App() {
     }
   };
 
+
+  const execCommand = async () => {
+    try {
+      if(!controllerCode || !controllerEvent){
+        return;
+      }
+      let value = CONTROLLER_EVENTS[controllerType][controllerEvent]+CONTROLLER_CODES[controllerType][controllerCode];
+      let command = CONTROLLERS[controllerType]+ value.length.toString().padStart(4,'0') + value;
+      console.log(command)
+      await emit("exec-command", command);
+    } catch (error) {
+      alert(error)
+    }
+  }
   useEffect(() => {
     throttledDraw();
   }, [touchSlots]);
@@ -145,9 +165,10 @@ function App() {
   }, []);
 
   return (
-    <main className="container-fluid p-4" style={{ height: '100dvh' }}>
-      <div className="row">
-        <div className="col d-flex justify-content-center" style={{
+    <main className="container-fluid p-4" style={{ height: '100dvh', overflowY: 'scroll' }}>
+      <div className="row gap-4">
+        <div className="col-lg"></div>
+        <div className="col-lg d-flex justify-content-center" style={{
         }}>
 
           {
@@ -155,7 +176,8 @@ function App() {
               ref={canvasRef}
               style={{
                 maxWidth: CANVAS_WIDTH / 2,
-                aspectRatio: CANVAS_WIDTH / CANVAS_HEIGHT,
+                maxHeight: 400,
+                aspectRatio: `${CANVAS_WIDTH} / ${CANVAS_HEIGHT} !important` ,
                 color: 'inherit',
                 border: '2px solid var(--color)',
                 display: 'block',
@@ -166,6 +188,35 @@ function App() {
               Baglantı Kur
             </button>
           }
+        </div>
+        <div className="col-lg">
+          <h2>Command Executer</h2>
+          <div className="row gap-3">
+            <div>
+              <h4>Controller:</h4>
+              <div className="row gap-4">
+                {Object.keys(CONTROLLER_EVENTS).map(t => <Button className="col-lg" secondary={controllerType != t} fullWidth onClick={() => setControllerType(t)}>{t}</Button>
+                )}
+              </div>
+            </div>
+            <div>
+              <h4>Event:</h4>
+              <div className="row gap-4">
+                {Object.keys(CONTROLLER_EVENTS[controllerType]).map(t => <Button className="col-lg" secondary={controllerEvent != t} fullWidth onClick={() => setControllerEvent(t)}>{t}</Button>
+                )}
+              </div>
+            </div>
+            <div>
+              <h4>Key:</h4>
+              <div className="row gap-4" style={{overflowY: 'scroll', maxHeight: 300}}>
+                {Object.keys(CONTROLLER_CODES[controllerType]).map(t => <Button className="col-lg" secondary={controllerCode != t} fullWidth onClick={() => setControllerCode( controllerCode == t ? '' : t)}>{t}</Button>
+                )}
+              </div>
+            </div>
+          </div>
+          <div className="mt-4">
+            <Button disabled={!controllerCode || !controllerEvent} onClick={execCommand} fullWidth>Execute</Button>
+          </div>
         </div>
       </div>
 
