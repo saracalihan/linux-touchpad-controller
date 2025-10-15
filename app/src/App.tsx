@@ -114,11 +114,11 @@ function App() {
 
   const execCommand = async () => {
     try {
-      if(!controllerCode || !controllerEvent){
+      if (!controllerCode || !controllerEvent) {
         return;
       }
-      let value = CONTROLLER_EVENTS[controllerType][controllerEvent]+CONTROLLER_CODES[controllerType][controllerCode];
-      let command = CONTROLLERS[controllerType]+ value.length.toString().padStart(4,'0') + value;
+      let value = CONTROLLER_EVENTS[controllerType][controllerEvent] + CONTROLLER_CODES[controllerType][controllerCode];
+      let command = CONTROLLERS[controllerType] + value.length.toString().padStart(4, '0') + value;
       console.log(command)
       await emit("exec-command", command);
     } catch (error) {
@@ -166,61 +166,68 @@ function App() {
 
   return (
     <main className="container-fluid p-4" style={{ height: '100dvh', overflowY: 'scroll' }}>
-      <div className="row gap-4">
-        <div className="col-lg"></div>
-        <div className="col-lg d-flex justify-content-center" style={{
-        }}>
+      <h1 className="col mb-4">Touchpad Macro Controller</h1>
+      <div className="row" style={{ height: '90%'}}>
+        <div className="col-1 box mx-4 ">sidebar</div>
+        <div className="col">
+          <div className="row gap-4 mb-4">
+            <div className="col-lg box"></div>
+            <div className="col-lg-5 d-flex justify-content-center box">
 
-          {
-            connectionStatus ? <canvas
-              ref={canvasRef}
-              style={{
-                maxWidth: CANVAS_WIDTH / 2,
-                maxHeight: 400,
-                aspectRatio: `${CANVAS_WIDTH} / ${CANVAS_HEIGHT} !important` ,
-                color: 'inherit',
-                border: '2px solid var(--color)',
-                display: 'block',
-                width: '100%',
-                height: '100%',
-              }}
-            /> : <button onClick={startConnection} style={{}}>
-              Baglantı Kur
-            </button>
-          }
-        </div>
-        <div className="col-lg">
-          <h2>Command Executer</h2>
-          <div className="row gap-3">
-            <div>
-              <h4>Controller:</h4>
-              <div className="row gap-4">
-                {Object.keys(CONTROLLER_EVENTS).map(t => <Button className="col-lg" secondary={controllerType != t} fullWidth onClick={() => setControllerType(t)}>{t}</Button>
-                )}
-              </div>
+              {
+                connectionStatus ? <canvas
+                  ref={canvasRef}
+                  style={{
+                    maxWidth: CANVAS_WIDTH / 2,
+                    maxHeight: 400,
+                    aspectRatio: `${CANVAS_WIDTH} / ${CANVAS_HEIGHT} !important`,
+                    color: 'inherit',
+                    border: '2px solid var(--color)',
+                    display: 'block',
+                    width: '100%',
+                    height: '100%',
+                    borderRadius: 'var(--border-radius)'
+                  }}
+                /> : <button onClick={startConnection} style={{}}>
+                  Baglantı Kur
+                </button>
+              }
             </div>
-            <div>
-              <h4>Event:</h4>
-              <div className="row gap-4">
-                {Object.keys(CONTROLLER_EVENTS[controllerType]).map(t => <Button className="col-lg" secondary={controllerEvent != t} fullWidth onClick={() => setControllerEvent(t)}>{t}</Button>
-                )}
+            <div className="col-lg box">
+              <h2>Command Executer</h2>
+              <div className="row gap-3">
+                <div>
+                  <h4>Controller:</h4>
+                  <div className="row gap-4">
+                    {Object.keys(CONTROLLER_EVENTS).map(t => <Button className="col-lg" secondary={controllerType != t} fullWidth onClick={() => setControllerType(t)}>{t}</Button>
+                    )}
+                  </div>
+                </div>
+                <div>
+                  <h4>Event:</h4>
+                  <div className="row gap-4">
+                    {Object.keys(CONTROLLER_EVENTS[controllerType]).map(t => <Button className="col-lg" secondary={controllerEvent != t} fullWidth onClick={() => setControllerEvent(t)}>{t}</Button>
+                    )}
+                  </div>
+                </div>
+                <div>
+                  <h4>Key:</h4>
+                  <div className="row gap-4" style={{ overflowY: 'scroll', maxHeight: 300 }}>
+                    {Object.keys(CONTROLLER_CODES[controllerType]).map(t => <Button className="col-lg" secondary={controllerCode != t} fullWidth onClick={() => setControllerCode(controllerCode == t ? '' : t)}>{t}</Button>
+                    )}
+                  </div>
+                </div>
               </div>
-            </div>
-            <div>
-              <h4>Key:</h4>
-              <div className="row gap-4" style={{overflowY: 'scroll', maxHeight: 300}}>
-                {Object.keys(CONTROLLER_CODES[controllerType]).map(t => <Button className="col-lg" secondary={controllerCode != t} fullWidth onClick={() => setControllerCode( controllerCode == t ? '' : t)}>{t}</Button>
-                )}
+              <div className="mt-4">
+                <Button disabled={!controllerCode || !controllerEvent} onClick={execCommand} fullWidth>Execute</Button>
               </div>
             </div>
           </div>
-          <div className="mt-4">
-            <Button disabled={!controllerCode || !controllerEvent} onClick={execCommand} fullWidth>Execute</Button>
+          <div className="row" >
+            <div className="col box" style={{height: 535}}> asd</div>
           </div>
-        </div>
-      </div>
 
-      {/* <h3>Son Mesaj / Seçili Slot</h3>
+          {/* <h3>Son Mesaj / Seçili Slot</h3>
       <div style={{
         display: 'grid',
         gridTemplateColumns: 'repeat(5, 1fr)',
@@ -248,7 +255,8 @@ function App() {
             )}
           </div>
         ))}
-      </div> */}
+      </div> */}</div>
+      </div>
     </main>
   );
 }

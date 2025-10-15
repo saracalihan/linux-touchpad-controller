@@ -9,7 +9,7 @@ export type ButtonProps = {
 
 
 export const Button = ({ children, onClick, className,disabled = false, secondary = false, fullWidth = false }: ButtonProps) => {
-  let color = 'var(--bg-color)';
+  let color = "white";//'var(--bg-color)';
   let background = 'var(--color)';
 
   if(secondary){
