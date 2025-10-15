@@ -286,7 +286,6 @@ int exec_command(ControllerCommand c){
     return 1;
 }
 int exec_str_command(char* data){
-    printf("DATAAA: '%s'\n", data);
     const char* format = "%1d%4d%[^\n]";
     char value[CONTROLLER_VALUE_LEN];
     int controller, size;
