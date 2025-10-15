@@ -30,7 +30,7 @@
 */
 
 typedef struct {
-    int controller; // 1 mouse, 2 keyboard
+    int controller; // 1 mouse, 2 keyboard, 3 shell
     int size; // size of value
     char value[CONTROLLER_VALUE_LEN];
 } ControllerCommand;

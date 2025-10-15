@@ -60,10 +60,19 @@ int init_keyboard(){
     return fd_uinput;
 }
 
+void init_shell(){
+    // NOP
+}
+
 void init_controllers(){
     mouse_fd = init_mouse();
     keyboard_fd = init_keyboard();
+    init_shell();
     sleep(1);
+}
+
+void cleanup_shell(){
+    // NOP
 }
 
 void cleanup_mouse(){
@@ -86,6 +95,7 @@ void cleanup_controllers(){
     printf("cleanup_controllers starting...\n");
     cleanup_mouse();
     cleanup_keyboard();
+    cleanup_shell();
     printf("cleanup_controllers done\n");
 }
 
@@ -177,6 +187,26 @@ void key_click(int code){
     key_release(code);
 }
 
+int shell_exec(char* cmd){
+    int pid = fork();
+    if(pid == -1){
+        printf("[SHELL CONTROLLER ERROR]: SHELL child process could not created: %m\n");
+        return 0;
+    }
+
+    // child
+    if(pid == 0){
+        printf("[SHELL CONTROLLER INFO]: '%s' command executing...\n", cmd);
+        int res = system(cmd);
+        if(res==-1){
+            printf("[SHELL CONTROLLER ERROR]: command could not executed: %m\n");
+            return 0;
+        }
+        printf("[SHELL CONTROLLER INFO]: '%s' command executed succesfuly\n", cmd);
+    }
+    return 1;
+}
+
 // TODO: mouse scroll. type 2 (EV_REL), code 8 (REL_WHEEL), value -1/+1
 
 int exec_command(ControllerCommand c){
@@ -236,6 +266,19 @@ int exec_command(ControllerCommand c){
                     return 0;
             }
             break;}
+        case CT_SHELL: {
+            if(c.size<=0){
+                printf("[CONTROLLER ERROR]: exec_command invalid SHELL cmd size\n");
+                return 0;
+            }
+            char* cmd = strndup(&c.value[0], c.size);
+            if(shell_exec(cmd) ==0){
+                free(cmd);
+                printf("[CONTROLLER ERROR]: shell_exec error\n");
+                return 0;
+            }
+            free(cmd);
+            break;}
         default:
             printf("[CONTROLLER ERROR]: unknown command controller: '%d'", c.controller);
             return 0;
@@ -243,15 +286,16 @@ int exec_command(ControllerCommand c){
     return 1;
 }
 int exec_str_command(char* data){
-    const char* format = "%1d%4d%s";
+    printf("DATAAA: '%s'\n", data);
+    const char* format = "%1d%4d%[^\n]";
     char value[CONTROLLER_VALUE_LEN];
-    int controller, size; 
+    int controller, size;
     int ps = sscanf(data, format, &controller, &size, value);
     if(ps != 3){
         printf("[RECV ERROR]: parsing failed. '%s'\n", data);
         return -1;
     }
-    printf("controller: '%d',size: '%d',value: '%s'\n",controller,size,value);
+    printf("controller: '%d',size: '%d',value: '%s'\n", controller, size, value);
     ControllerCommand c = {0};
     c.controller = controller;
     c.size = size;

@@ -16,6 +16,7 @@
 typedef enum {
     CT_MOUSE=1,
     CT_KEYBOARD,
+    CT_SHELL,
 } ControllerType;
 
 typedef enum {
@@ -23,6 +24,7 @@ typedef enum {
     CT_RELEASE,
     CT_CLICK,
     CT_MOVE,
+    CT_EXEC,
 } ControllerEvent;
 
 typedef enum {
