@@ -187,7 +187,7 @@ void key_click(int code){
     key_release(code);
 }
 
-int shell_exec(char* cmd){
+int shell_exec(char cmd[CONTROLLER_VALUE_LEN]){
     int pid = fork();
     if(pid == -1){
         printf("[SHELL CONTROLLER ERROR]: SHELL child process could not created: %m\n");
@@ -271,13 +271,10 @@ int exec_command(ControllerCommand c){
                 printf("[CONTROLLER ERROR]: exec_command invalid SHELL cmd size\n");
                 return 0;
             }
-            char* cmd = strndup(&c.value[0], c.size);
-            if(shell_exec(cmd) ==0){
-                free(cmd);
+            if(shell_exec(c.value) ==0){
                 printf("[CONTROLLER ERROR]: shell_exec error\n");
                 return 0;
             }
-            free(cmd);
             break;}
         default:
             printf("[CONTROLLER ERROR]: unknown command controller: '%d'", c.controller);
