@@ -117,12 +117,29 @@ function App() {
       if (!controllerCode || !controllerEvent) {
         return;
       }
-      let value = CONTROLLER_EVENTS[controllerType][controllerEvent] + CONTROLLER_CODES[controllerType][controllerCode];
-      let command = CONTROLLERS[controllerType] + value.length.toString().padStart(4, '0') + value;
-      console.log(command)
+
+      let value = '';
+
+      const eventsMap = CONTROLLER_EVENTS[controllerType] as Record<string, string | number> | undefined;
+      const codesMap = CONTROLLER_CODES[controllerType] as Record<string, string> | undefined;
+
+      const eventVal = eventsMap ? eventsMap[controllerEvent] : undefined;
+      const codeVal = codesMap ? codesMap[controllerCode] : undefined;
+
+      if (eventVal != null && codeVal != null) {
+        value = String(eventVal) + String(codeVal);
+      } else if (codeVal != null) {
+        value = String(codeVal);
+      } else {
+        value = controllerCode;
+      }
+
+      const controllerPrefix = CONTROLLERS[controllerType] ?? '';
+      const command = controllerPrefix + value.length.toString().padStart(4, '0') + value;
+      console.log(command);
       await emit("exec-command", command);
     } catch (error) {
-      alert(error)
+      alert(error);
     }
   }
   useEffect(() => {
@@ -167,7 +184,7 @@ function App() {
   return (
     <main className="container-fluid p-4" style={{ height: '100dvh', overflowY: 'scroll' }}>
       <h1 className="col mb-4">Touchpad Macro Controller</h1>
-      <div className="row" style={{ height: '90%'}}>
+      <div className="row" style={{ height: '90%' }}>
         <div className="col-1 box mx-4 ">sidebar</div>
         <div className="col">
           <div className="row gap-4 mb-4">
@@ -203,28 +220,30 @@ function App() {
                     )}
                   </div>
                 </div>
-                <div>
-                  <h4>Event:</h4>
-                  <div className="row gap-4">
-                    {Object.keys(CONTROLLER_EVENTS[controllerType]).map(t => <Button className="col-lg" secondary={controllerEvent != t} fullWidth onClick={() => setControllerEvent(t)}>{t}</Button>
-                    )}
+                {CONTROLLER_EVENTS[controllerType] &&
+                  <div>
+                    <h4>Event:</h4>
+                    <div className="row gap-4">
+                      {Object.keys(CONTROLLER_EVENTS[controllerType]).map(t => <Button className="col-lg" secondary={controllerEvent != t} fullWidth onClick={() => setControllerEvent(t)}>{t}</Button>
+                      )}
+                    </div>
                   </div>
-                </div>
+                }
                 <div>
-                  <h4>Key:</h4>
+                  <h4>Value:</h4>
                   <div className="row gap-4" style={{ overflowY: 'scroll', maxHeight: 300 }}>
-                    {Object.keys(CONTROLLER_CODES[controllerType]).map(t => <Button className="col-lg" secondary={controllerCode != t} fullWidth onClick={() => setControllerCode(controllerCode == t ? '' : t)}>{t}</Button>
-                    )}
+                    {CONTROLLER_CODES[controllerType] ? Object.keys(CONTROLLER_CODES[controllerType]).map(t => <Button className="col-lg" secondary={controllerCode != t} fullWidth onClick={() => setControllerCode(controllerCode == t ? '' : t)}>{t}</Button>
+                    ) : <input placeholder="value" onChange={e => setControllerCode(e.currentTarget.value)}></input>}
                   </div>
                 </div>
               </div>
               <div className="mt-4">
-                <Button disabled={!controllerCode || !controllerEvent} onClick={execCommand} fullWidth>Execute</Button>
+                <Button disabled={!controllerCode} onClick={execCommand} fullWidth>Execute</Button>
               </div>
             </div>
           </div>
           <div className="row" >
-            <div className="col box" style={{height: 535}}> asd</div>
+            <div className="col box" style={{ height: 535 }}> asd</div>
           </div>
 
           {/* <h3>Son Mesaj / Seçili Slot</h3>
